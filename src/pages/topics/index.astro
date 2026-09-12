@@ -1,0 +1,92 @@
+---
+import { getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import Header from '../../components/Header.astro';
+import { getTopicDescription, getTopicTitle } from '../../content/topics';
+import { SITE_TITLE } from '../../consts';
+
+const posts = await getCollection('blog');
+
+const countBySlug = new Map<string, number>();
+for (const post of posts) {
+	for (const slug of post.data.topics) {
+		countBySlug.set(slug, (countBySlug.get(slug) ?? 0) + 1);
+	}
+}
+
+const topics = [...countBySlug.entries()]
+	.map(([slug, count]) => ({
+		slug,
+		count,
+		title: getTopicTitle(slug),
+		description: getTopicDescription(slug),
+	}))
+	.sort((a, b) => a.title.localeCompare(b.title));
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead title={`Topics | ${SITE_TITLE}`} description="Browse posts by topic." />
+		<style>
+			main {
+				width: 720px;
+				max-width: calc(100% - 2em);
+				margin: 0 auto;
+			}
+			ul {
+				list-style-type: none;
+				margin: 0;
+				padding: 0;
+			}
+			li {
+				padding: 1em 0;
+				border-bottom: 1px solid rgb(var(--gray-light));
+			}
+			li a {
+				color: rgb(var(--black));
+				text-decoration: none;
+			}
+			li a:hover .title {
+				color: rgb(var(--accent));
+			}
+			.title {
+				margin: 0;
+			}
+			.description {
+				margin: 0.25em 0 0;
+				color: rgb(var(--gray));
+			}
+			.count {
+				color: rgb(var(--gray));
+				font-weight: normal;
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<h1>Topics</h1>
+			{
+				topics.length === 0 ? (
+					<p>No posts have been tagged with a topic yet.</p>
+				) : (
+					<ul>
+						{topics.map((topic) => (
+							<li>
+								<a href={`${import.meta.env.BASE_URL}/topics/${topic.slug}/`}>
+									<h2 class="title">
+										{topic.title} <span class="count">({topic.count})</span>
+									</h2>
+									{topic.description && <p class="description">{topic.description}</p>}
+								</a>
+							</li>
+						))}
+					</ul>
+				)
+			}
+		</main>
+		<Footer />
+	</body>
+</html>

@@ -1,0 +1,103 @@
+---
+import { type CollectionEntry, getCollection } from 'astro:content';
+import BaseHead from '../../components/BaseHead.astro';
+import Footer from '../../components/Footer.astro';
+import FormattedDate from '../../components/FormattedDate.astro';
+import Header from '../../components/Header.astro';
+import { getTopicDescription, getTopicTitle } from '../../content/topics';
+import { SITE_TITLE } from '../../consts';
+
+export async function getStaticPaths() {
+	const posts = await getCollection('blog');
+
+	const postsBySlug = new Map<string, CollectionEntry<'blog'>[]>();
+	for (const post of posts) {
+		for (const slug of post.data.topics) {
+			postsBySlug.set(slug, [...(postsBySlug.get(slug) ?? []), post]);
+		}
+	}
+
+	return [...postsBySlug.entries()].map(([slug, topicPosts]) => ({
+		params: { topic: slug },
+		props: {
+			posts: topicPosts.sort((a, b) => b.data.pubDate.valueOf() - a.data.pubDate.valueOf()),
+		},
+	}));
+}
+
+type Props = { posts: CollectionEntry<'blog'>[] };
+
+const { posts } = Astro.props;
+const { topic } = Astro.params;
+const title = getTopicTitle(topic!);
+const description = getTopicDescription(topic!);
+---
+
+<!doctype html>
+<html lang="en">
+	<head>
+		<BaseHead
+			title={`${title} | ${SITE_TITLE}`}
+			description={description ?? `Posts about ${title}.`}
+		/>
+		<style>
+			main {
+				width: 720px;
+				max-width: calc(100% - 2em);
+				margin: 0 auto;
+			}
+			ul {
+				list-style-type: none;
+				margin: 0;
+				padding: 0;
+			}
+			li {
+				padding: 1em 0;
+				border-bottom: 1px solid rgb(var(--gray-light));
+			}
+			li a {
+				color: rgb(var(--black));
+				text-decoration: none;
+			}
+			li a:hover .title {
+				color: rgb(var(--accent));
+			}
+			.title {
+				margin: 0;
+			}
+			.date {
+				margin: 0.25em 0 0;
+				color: rgb(var(--gray));
+			}
+			.intro {
+				color: rgb(var(--gray));
+			}
+			a.back {
+				color: rgb(var(--gray));
+			}
+		</style>
+	</head>
+	<body>
+		<Header />
+		<main>
+			<p><a class="back" href={`${import.meta.env.BASE_URL}/topics/`}>&larr; All topics</a></p>
+			<h1>{title}</h1>
+			{description && <p class="intro">{description}</p>}
+			<ul>
+				{
+					posts.map((post) => (
+						<li>
+							<a href={`${import.meta.env.BASE_URL}/blog/${post.id}/`}>
+								<h2 class="title">{post.data.title}</h2>
+								<p class="date">
+									<FormattedDate date={post.data.pubDate} />
+								</p>
+							</a>
+						</li>
+					))
+				}
+			</ul>
+		</main>
+		<Footer />
+	</body>
+</html>

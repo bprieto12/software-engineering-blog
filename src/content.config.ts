@@ -14,6 +14,10 @@ const blog = defineCollection({
 			pubDate: z.coerce.date(),
 			updatedDate: z.coerce.date().optional(),
 			heroImage: z.optional(image()),
+			// Freeform topic tags, e.g. ['high-performance-apis', 'data-modeling'].
+			// A post can carry more than one; a topic page is generated for any
+			// slug that shows up here, no separate registration required.
+			topics: z.array(z.string()).default([]),
 		}),
 });
 
